@@ -1,0 +1,700 @@
+//
+//  ClassConnectToPanHealth.m
+//  PHCLiteNew
+//
+//  Created by Avi Kulkarni on 09/06/12.
+//  Copyright 2012 PanHealth Inc. All rights reserved.
+//
+
+#import "ClassConnectToPanHealth.h"
+
+#import "classWebServices.h"
+#import "classMedicine.h"
+#import "classMedicineTime.h"
+#import "classDatabaseOperations.h"
+#import "commanFunctions.h"
+#import "classUser.h"
+#import "classAudio.h"
+#import "classCompartmentData.h"
+
+int downloadingMode;
+#define downloadingUserInfo 1
+#define downloadingMedicineInfo 2
+int medicineIndex,uploded,duplicate;
+
+@implementation ClassConnectToPanHealth
+@synthesize txtMemberId;
+@synthesize txtPassword;
+@synthesize cellMemberId;
+@synthesize cellPassword;
+@synthesize cellEmpty;
+@synthesize cellInstruction;
+@synthesize cellPanhealth;
+@synthesize objUser;
+@synthesize delegate=_delegate;
+@synthesize btnDone,btnCancel;
+@synthesize myAudioPlayer;
+
+
+- (id)initWithStyle:(UITableViewStyle)style
+{
+    self = [super initWithStyle:style];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [super dealloc];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    // Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+    // Release any cached data, images, etc that aren't in use.
+}
+
+#pragma mark - View lifecycle
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    self.title=@"Connect To PanHealth";
+
+    self.btnCancel=[[[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(cancel) ] autorelease];
+    self.navigationItem.leftBarButtonItem=self.btnCancel;
+    
+    self.btnDone=[[[UIBarButtonItem alloc] initWithTitle:@"Done" style:UIBarButtonItemStyleDone target:self action:@selector(done) ] autorelease];
+    self.navigationItem.rightBarButtonItem=self.btnDone;
+    
+    
+    self.txtMemberId.text=self.objUser.memberId;
+    
+    if(objUser.audioStatus==YES)
+    {
+        if(objUser.language==1)
+        {
+            NSMutableArray * array=[[NSMutableArray alloc] init];
+            [array addObject:@"pleaseEnterYourMemberIdAndPassword"];
+            
+            [self.myAudioPlayer playAudios:array];
+            [array release];
+        }
+        
+        
+        else if(objUser.language==2)
+        {
+            NSMutableArray * array=[[NSMutableArray alloc] init];
+            [array addObject:@"2pleaseEnterYourMemberIdAndPassword"];
+            
+            [self.myAudioPlayer playAudios:array];
+            [array release];
+            
+            
+            
+        }
+        
+    }
+
+    // Uncomment the following line to preserve selection between presentations.
+    // self.clearsSelectionOnViewWillAppear = NO;
+ 
+    // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
+    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
+}
+
+- (void)viewDidUnload
+{
+    [super viewDidUnload];
+    // Release any retained subviews of the main view.
+    // e.g. self.myOutlet = nil;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    NSString *strImg1=@"backImage1.png";
+    UIImageView *logoView = [[UIImageView alloc]initWithImage:[UIImage imageNamed:strImg1]];
+    NSString *strImg=[classDatabaseOperations getNurseImg:objUser.userId];
+    NSLog(@"%@image",strImg);
+    if ([strImg isEqualToString:@"null"])
+    {
+        logoView.image=[UIImage imageNamed:strImg1];
+    }
+    else{
+        NSLog(@"Nurse is %@",strImg);
+        logoView.image=[UIImage imageNamed:strImg];
+    }
+    
+    
+    logoView.frame = CGRectMake(220, 0, 43, 43);
+    
+    
+    [self.navigationController.navigationBar addSubview:logoView];
+    [logoView release];
+     
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+}
+
+- (void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    // Return YES for supported orientations
+    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+}
+
+#pragma mark - Table view data source
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+//#warning Potentially incomplete method implementation.
+    // Return the number of sections.
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+//#warning Incomplete method implementation.
+    // Return the number of rows in the section.
+    return 5;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+
+    switch (indexPath.row)
+    {
+            
+        case 3: return cellPanhealth;
+            
+            break;
+            
+        case 1: return cellMemberId;
+            
+            break;
+            
+        case 2: return cellPassword;
+            
+            break;
+            
+        case 0: return cellInstruction;
+            
+            break;
+            
+            
+    }
+    
+    
+    return cellEmpty;
+    
+}
+
+/*
+// Override to support conditional editing of the table view.
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    // Return NO if you do not want the specified item to be editable.
+    return YES;
+}
+*/
+
+/*
+// Override to support editing the table view.
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        // Delete the row from the data source
+        [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+    }   
+    else if (editingStyle == UITableViewCellEditingStyleInsert) {
+        // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+    }   
+}
+*/
+
+/*
+// Override to support rearranging the table view.
+- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+{
+}
+*/
+
+/*
+// Override to support conditional rearranging of the table view.
+- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    // Return NO if you do not want the item to be re-orderable.
+    return YES;
+}
+*/
+
+#pragma mark - Table view delegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    // Navigation logic may go here. Create and push another view controller.
+    /*
+     <#DetailViewController#> *detailViewController = [[<#DetailViewController#> alloc] initWithNibName:@"<#Nib name#>" bundle:nil];
+     // ...
+     // Pass the selected object to the new view controller.
+     [self.navigationController pushViewController:detailViewController animated:YES];
+     [detailViewController release];
+     */
+}
+-(void)cancel
+{
+    
+    [self.delegate ConnToPanHealthDidCancelTakMed];
+    
+}
+
+
+-(void)done
+{
+    medicineIndex=0;
+    uploded=0;
+    duplicate=0;
+    downloadingMode=downloadingUserInfo;
+    
+    
+    if([txtMemberId.text length]!=0)
+    {
+        
+        if([txtPassword.text length]!=0)
+        {
+            
+            
+                if(objUser.audioStatus==YES)
+                {
+                    if(objUser.language==1)
+                    {
+                        NSMutableArray * array=[[NSMutableArray alloc] init];
+                        [array addObject:@"PleaseWeightLoginIN"];                
+                        [self.myAudioPlayer playAudios:array];
+                        [array release];
+                    }
+                    
+                    else if(objUser.language==2)
+                        
+                    {
+                        NSMutableArray * array=[[NSMutableArray alloc] init];
+                        [array addObject:@"2PleaseWeightLoginIN"];                
+                        [self.myAudioPlayer playAudios:array];
+                        [array release];
+                        
+                        
+                    }
+                }
+                [self validateUser];
+            
+            
+            
+        }
+        else
+        {
+            
+            
+            UIAlertView * alert=[[UIAlertView alloc] initWithTitle:@"Please enter your Password " message:nil delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+            [alert show];
+            [alert release];  
+            
+        }
+        
+    }
+    else
+    {
+        
+        UIAlertView * alert=[[UIAlertView alloc] initWithTitle:@"Please enter your Member Id" message:nil delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+        [alert show];
+        [alert release]; 
+        
+    }
+    
+    
+    
+    
+}
+
+
+
+-(void)showInidcator:(BOOL)mode
+{
+    if(downloadingMode==downloadingUserInfo)
+    {
+        
+        [self showInidcator:mode withMessage:@"Logging in..."];
+        
+        
+        
+    }
+    else
+    {        
+        //        classCompartmentData * objMed=[arrayTakeMed objectAtIndex:medicineIndex];
+        //        
+        //        [self showInidcator:mode withMessage:[NSString stringWithFormat:@"Uploading (%d of %d) %@",medicineIndex+1, [arrayTakeMed count], objMed.bayMedName]];
+        //NSLog(@"Uploading medicine %d",medicineIndex);
+        
+        
+        [self showInidcator:mode withMessage:@"Uploading...."];
+        
+        
+    }
+    
+    
+    
+}
+
+-(void)showInidcator:(BOOL)mode withMessage:(NSString *)message
+{
+    
+    
+    
+    if(mode==YES)
+    {
+        
+        
+        
+        self.btnCancel.enabled=NO;
+        self.btnDone.enabled=NO;
+        
+        UIView * viewWithActIndicator=[[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 480)];
+        viewWithActIndicator.tag=100;
+        viewWithActIndicator.alpha=0.7f;
+        viewWithActIndicator.backgroundColor=[UIColor blackColor];
+        
+        
+        UIActivityIndicatorView * indicator=[[UIActivityIndicatorView alloc] initWithFrame:CGRectMake(135, 218, 37, 37)];        
+        indicator.activityIndicatorViewStyle=UIActivityIndicatorViewStyleWhiteLarge;
+        [indicator startAnimating];
+        [viewWithActIndicator addSubview:indicator];
+        
+        [indicator release];
+        
+        UILabel * lblLoading=[[UILabel alloc] initWithFrame:CGRectMake(0, 255, 320, 21)];
+        lblLoading.text=message;
+        lblLoading.textAlignment=UITextAlignmentCenter;
+        lblLoading.font=[UIFont fontWithName:@"Futura" size:14.0f];
+        lblLoading.textColor=[UIColor whiteColor];
+        lblLoading.backgroundColor=[UIColor clearColor];
+        
+        [viewWithActIndicator addSubview:lblLoading];
+        [lblLoading release];
+        
+        [self.view addSubview:viewWithActIndicator];
+        [viewWithActIndicator release];
+        
+        
+    }
+    else
+    {
+        
+        self.btnCancel.enabled=YES;
+        self.btnDone.enabled=YES;
+        
+        UIView * myview=[self.view viewWithTag:100];
+        [myview removeFromSuperview];//848381
+        
+    }
+    
+}
+-(void)resultAfterParsing:(NSMutableArray *)arrayResult
+{
+    if(downloadingMode==downloadingUserInfo)
+    {
+        if([arrayResult count]==1 && ![[arrayResult objectAtIndex:0] isEqualToString:@"False"])
+        {
+            
+            // update users member id            
+            NSString * queryString=[NSString stringWithFormat: @"update user set memberid='%@' where userid=%d",[commanFunctions genrateMemberId:self.txtMemberId.text], self.objUser.userId];
+            
+            // NSLog(@"%@",queryString);
+            [classDatabaseOperations add:queryString];
+            NSString * queryString1=[NSString stringWithFormat: @"update takemedicine set Memberid='%@' where userid=%d",[commanFunctions genrateMemberId:self.txtMemberId.text], self.objUser.userId];
+            
+            // NSLog(@"%@",queryString);
+            [classDatabaseOperations add:queryString1];
+            
+            
+            
+            self.objUser.memberId=[commanFunctions genrateMemberId:txtMemberId.text];
+            [self showInidcator:NO];
+            
+            UIAlertView * alert=[[UIAlertView alloc] initWithTitle:@"Message" message:@"MemberId and Password Saved Successfull !!"  delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+                     alert.tag=89;
+                  [alert show];
+                      [alert release];
+        
+            // change downloadig mode
+           // downloadingMode=downloadingMedicineInfo;       
+            
+           // [self getTableTakeMed];
+           // [self saveMedicineArray];
+            
+            //            if(medicineIndex<[arrayTakeMed count])
+            //            {
+            //                classCompartmentData * objTakeMed=[arrayTakeMed objectAtIndex:medicineIndex];
+            //                
+            //                [self saveMedicine:objTakeMed];
+            //                
+            //            }
+            
+            
+            
+            
+            
+        }
+        else
+        {
+            
+            // alert- Login failed
+            
+            [self showInidcator:NO];
+            UIAlertView * alert=[[UIAlertView alloc] initWithTitle:@"Unable to login" message:@"Please check Member Id/ passwrod, \n and try again" delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+            [alert show];
+            [alert release];
+            
+            
+            
+            
+        }
+        
+        
+    }
+    else  if(downloadingMode==downloadingMedicineInfo)
+    {
+        
+        //medicineIndex++;
+        //   [self saveMedicineArray];
+        
+        
+        //        if(medicineIndex<[arrayTakeMed count])
+        //        {
+        //            classCompartmentData * objTakeMed=[arrayTakeMed objectAtIndex:medicineIndex];
+        //            [self saveMedicine:objTakeMed];
+        //            
+        //        }
+        
+        //        
+        //        if([[arrayResult objectAtIndex:0] isEqualToString:@"True"])
+        //        {
+        //            
+        //            
+        //            uploded++;
+        //            
+        //        }
+        //        else
+        //        {
+        //            
+        //            
+        //            duplicate++;
+        //            
+        //        }
+        //        
+        
+        //NSLog(@"result ading medicine %@, medicine index:%d",[arrayResult objectAtIndex:0],medicineIndex);
+        
+        // if(medicineIndex>=[arrayTakeMed count])
+       // {
+            
+            
+//          int i=[arrayTakeMed count]/10;
+//            
+//            
+//            
+//            UIAlertView * alert=[[UIAlertView alloc] initWithTitle:@"Uploading complete !!" message:[NSString stringWithFormat: @"Uploaded Medicine:%d ",i] delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+//            alert.tag=89;
+//            [alert show];
+//            [alert release]; 
+//            
+//            if(objUser.audioStatus==YES)
+//            {
+//                
+//                if(objUser.language==1)
+//                {
+//                    NSMutableArray * array=[[NSMutableArray alloc] init];
+//                    [array addObject:@"uploadingComplete"];
+//                    
+//                    [self.myAudioPlayer playAudios:array];
+//                    [array release];
+//                }
+//                else if(objUser.language==2)
+//                {
+//                    NSMutableArray * array=[[NSMutableArray alloc] init];
+//                    [array addObject:@"2uploadingComplete"];
+//                    
+//                    [self.myAudioPlayer playAudios:array];
+//                    [array release];
+//                    
+//                    
+//                }
+//                
+//            }
+//        }
+        
+        
+   }    
+    
+    
+    
+}
+
+
+-(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    
+    
+    if(alertView.tag==89)
+    {
+        [self dismissModalViewControllerAnimated:YES];
+       // [self.delegate ConnToPanHealthDidCompleteTakMed];
+        
+        
+    }
+    
+    
+}
+
+
+-(void)connectionDidFailWithError
+{
+    
+    
+    
+}
+
+-(NSString *)genrateMemberId:(NSString *) memberId
+{
+	NSAutoreleasePool * pool=[[NSAutoreleasePool alloc]init];
+    
+    
+	NSMutableString *strNewMemberId=[[NSMutableString alloc]init];
+	NSString * subStringOfGivenMemberId=[memberId substringFromIndex:1];
+	
+	
+    for(int i=0;i<12-[subStringOfGivenMemberId length];i++)
+    {
+        
+        if(i==0)// append A
+        {
+            [strNewMemberId appendString: [[NSString stringWithFormat:@"%c",[memberId characterAtIndex:0]] uppercaseString]];
+        }
+        else
+        {
+            [strNewMemberId appendString: @"0"];
+        }
+    }
+    
+    [strNewMemberId appendString:subStringOfGivenMemberId];
+	[pool drain];
+	NSString *str=[strNewMemberId substringFromIndex:0];
+	[strNewMemberId release];
+	
+	//
+	
+	return str;	
+	
+}
+-(void)validateUser
+{
+    
+    
+    [self showInidcator:YES];
+    [txtMemberId resignFirstResponder];
+    [txtPassword resignFirstResponder];
+    
+    //1st call webservice to download userInfo e.g. fname, lname, getnder, phno. and email
+    
+    downloadingMode=downloadingUserInfo;
+    
+    
+    NSString * soapMsg=[NSString stringWithFormat:@"<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+                        "<soap:Body>"
+                        "<getMemberinfo xmlns=\"http://tempuri.org/\">"
+                        "<strUserid>%@</strUserid>"
+                        "<strPass>%@</strPass>"
+                        "</getMemberinfo>"
+                        "</soap:Body>"
+                        "</soap:Envelope>",[commanFunctions genrateMemberId:txtMemberId.text],txtPassword.text];
+    
+     NSLog(@"%@",soapMsg);
+    //url for websrvice method
+    NSString * url=@"http:173.161.245.235/test/Service.asmx";
+    
+    // and soap aciton of webservice method
+    NSString *soapAction=@"http://tempuri.org/getMemberinfo";
+    
+    // create the object of webservice class, this class contian all code for webservice and parsing
+    classWebServices * objWebService=[[classWebServices alloc]init];
+    objWebService.delegate=self;
+    
+    // call the method and pass all info i.e. body, url and soapaction
+    [objWebService callWebServiceWithBoday:soapMsg url:url soapAction:soapAction];
+    
+    [objWebService release];
+    
+    
+}
+-(void)saveMedicineArray
+{
+    
+//    NSString * soapMsg=[NSString stringWithFormat:@"<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+//                        "<soap:Body>"
+//                        "<Take_MedicationArray xmlns=\"http://tempuri.org/\">"
+//                        " <strData>%@</strData>"
+//                        " </Take_MedicationArray>"
+//                        "</soap:Body>"
+//                        " </soap:Envelope>",];
+//    
+//    
+//    
+//    
+//    NSLog(@" soap Msg  %@",soapMsg);
+//    
+//    // url for websrvice method
+//    NSString * url=@"http:173.161.245.235/test/Service.asmx";
+//    
+//    //and soap aciton of webservice method
+//    NSString *soapAction=@"http://tempuri.org/Take_MedicationArray";
+//    
+//    
+//    
+//    //create the object of webservice class, this class contian all code for webservice and parsing
+//    classWebServices * objWebService=[[classWebServices alloc]init];
+//    objWebService.delegate=self;
+//    
+//    // call the method and pass all info i.e. body, url and soapaction
+//    [objWebService callWebServiceWithBoday:soapMsg url:url soapAction:soapAction];
+//    
+//    [objWebService release];
+//    
+    
+    
+    
+    
+}
+-(void)getTableTakeMed
+{
+    
+}
+
+
+
+@end
